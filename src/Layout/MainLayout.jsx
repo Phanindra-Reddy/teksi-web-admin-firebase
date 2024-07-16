@@ -111,6 +111,7 @@ const MainLayout = ({ Component }) => {
   const handleRouteClick = (event) => {
     setSelectedRoute(event);
   };
+  
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />

@@ -2,24 +2,23 @@ import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
 import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import FileUpload from "../components/FileUpload";
-import { storage } from "../../firebase";
+import { firestoreDb, storage } from "../../firebase";
 import {
   getDownloadURL,
   ref as storageRef,
   uploadBytesResumable,
 } from "firebase/storage";
-import { notifyError } from "../../toast";
-import { useForm } from "react-hook-form";
+import { notifySuccess, notifyWarning } from "../../toast";
+import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { doc, setDoc } from "firebase/firestore";
 
 const defaultTheme = createTheme();
 
@@ -27,68 +26,107 @@ const AddDriver = () => {
   const {
     handleSubmit,
     control,
-    formState: { errors },
     setValue,
+    formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
+  const [driverAadhar, setDriverAadhar] = useState("");
+  const [aadharUploaded, setAadharUploaded] = useState(false);
+  const [dlNumUploaded, setDlNumUploaded] = useState(false);
+
+  const [aadharUrl, setAadharUrl] = useState("");
+  const [dlUrl, setDLUrl] = useState("");
+
+  const onSubmit = async (data) => {
     console.log(data);
+
+    const driver = {
+      driverID: data.aadhar,
+      cityCode: data.city,
+      cityName: data.city === "HYD" ? "Hyderabad" : "Tirupathi",
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      aadhar: data.aadhar,
+      mobile: data.mobile,
+      dlNumber: data.drivingLicense,
+      aadharUrl,
+      dlUrl,
+    };
+
+    if (aadharUploaded && dlNumUploaded) {
+      // saving user trip booking to cloud firestore
+      const cityDrivers = data.city === "HYD" ? "HYDDRIVERS" : "TIRDRIVERS";
+
+      const docRef = doc(
+        firestoreDb,
+        `drivers/${data.city}/${cityDrivers}/${data.aadhar}`
+      );
+      await setDoc(docRef, driver)
+        .then((docRef) => {
+          console.log("created successfully");
+          console.log("261", docRef);
+          notifySuccess("Driver created successfully");
+        })
+        .catch((err) => console.log(err));
+    } else {
+      notifyWarning("Please upload aadhra and driving license");
+    }
   };
 
-  const handleFileChange = (e) => {
-    setValue("file", e.target.files[0]);
+  const handleAadhaarChange = async (e) => {
+    const aadhaar = e.target.value;
+    setValue("aadhaar", aadhaar);
+    setDriverAadhar(aadhaar);
   };
 
+  const handleFileChange = async (e, fileName) => {
+    e.preventDefault();
+    const file = e.target.files[0];
+    if (file) {
+      console.log("file", file);
 
-  const fileUploadProp = {
-    accept: "image/*",
-    onChange: (event) => {
-      if (event.target.files !== null && event.target?.files?.length > 0) {
-        console.log(`Saving ${event.target.value}`, event.target?.files);
+      const imageRef = storageRef(
+        storage,
+        `drivers/${driverAadhar}/${file?.name}`
+      );
+      const uploadTask = uploadBytesResumable(imageRef, file);
 
-        const imageRef = storageRef(
-          storage,
-          `drivers/d1/${event.target?.files[0].name}`
-        );
-        const uploadTask = uploadBytesResumable(
-          imageRef,
-          event.target?.files[0]
-        );
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          // Handle progress here if needed
+        },
+        (error) => {
+          // Handle unsuccessful uploads
+          console.error("Error uploading file:", error);
+        },
+        async () => {
+          // Handle successful upload
+          console.log("Upload successful");
 
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            // Observe state change events such as progress, pause, and resume
-            // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-            // var progress =
-            //   (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            // console.log("Upload is " + progress + "% done");
-          },
-          (error) => {
-            // Handle unsuccessful uploads
-            console.log(error);
-          },
-          () => {
-            // Handle successful uploads on complete
-            // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+          // Get download URL
+          try {
+            const fileURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-            getDownloadURL(uploadTask.snapshot.ref)
-              .then((url) => {
-                //saveData(url);
-                console.log("uploaded url", url);
-              })
-              .catch((error) => {
-                notifyError(error.message);
-              });
+            console.log("fileURL", fileURL);
+
+            if (fileURL) {
+              if (fileName === "aadharFile") {
+                setAadharUrl(fileURL);
+                setAadharUploaded(true);
+              } else {
+                setDLUrl(fileURL);
+                setDlNumUploaded(true);
+              }
+            }
+          } catch (error) {
+            console.error("Error getting download URL:", error);
           }
-        );
-      }
-    },
-    onDrop: (event) => {
-      console.log(`Drop ${event.dataTransfer.files[0].name}`);
-    },
+        }
+      );
+    }
   };
-
 
   return (
     <div>
@@ -101,20 +139,64 @@ const AddDriver = () => {
               flexDirection: "column",
             }}
           >
-            <Typography
-              component="h1"
-              variant="h5"
+            <Box
               sx={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "start",
+                flexDirection: "row",
+                justifyContent: "space-between",
               }}
             >
-              <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-                <LockOutlinedIcon />
-              </Avatar>
-              Add New Driver
-            </Typography>
+              <Typography
+                component="h1"
+                variant="h5"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "start",
+                }}
+              >
+                <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+                  <PersonAddIcon />
+                </Avatar>
+                Add New Driver
+              </Typography>
+              <FormControl
+                sx={{ m: 1, minWidth: 160 }}
+                size="small"
+                error={errors.city}
+              >
+                <InputLabel id="demo-select-small-label">
+                  Select City
+                </InputLabel>
+                <Controller
+                  name="city"
+                  control={control}
+                  rules={{ required: "City is required" }}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      labelId="demo-select-small-label"
+                      id="demo-select-small"
+                      label="city"
+                    >
+                      <MenuItem value="HYD">Hyderabad</MenuItem>
+                      <MenuItem value="TIR">Tirupathi</MenuItem>
+                    </Select>
+                  )}
+                />
+                {errors.city && (
+                  <span
+                    style={{
+                      color: "#d32f2f",
+                      fontSize: "0.75rem",
+                      fontWeight: 400,
+                    }}
+                  >
+                    {errors.city.message}
+                  </span>
+                )}
+              </FormControl>
+            </Box>
             <form onSubmit={handleSubmit(onSubmit)}>
               <Box
                 sx={{
@@ -131,84 +213,194 @@ const AddDriver = () => {
                 >
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        autoComplete="given-name"
+                      <Controller
                         name="firstName"
-                        required
-                        fullWidth
-                        id="firstName"
-                        label="First Name"
-                        autoFocus
+                        control={control}
+                        defaultValue=""
+                        rules={{ required: "First name is required" }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="First Name"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.firstName}
+                            helperText={
+                              errors.firstName ? errors.firstName.message : ""
+                            }
+                          />
+                        )}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        required
-                        fullWidth
-                        id="lastName"
-                        label="Last Name"
+                      <Controller
                         name="lastName"
-                        autoComplete="family-name"
-                        autoFocus
+                        control={control}
+                        defaultValue=""
+                        rules={{ required: "Last name is required" }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Last Name"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.lastName}
+                            helperText={
+                              errors.lastName ? errors.lastName.message : ""
+                            }
+                          />
+                        )}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        autoComplete="given-mobile"
+                      <Controller
                         name="mobile"
-                        required
-                        fullWidth
-                        id="mobile"
-                        label="Mobile Number"
-                        autoFocus
+                        control={control}
+                        defaultValue=""
+                        rules={{
+                          required: "Mobile number is required",
+                          pattern: {
+                            value: /^[0-9]{10}$/,
+                            message: "Mobile number must be 10 digits",
+                          },
+                        }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Mobile Number"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.mobile}
+                            helperText={
+                              errors.mobile ? errors.mobile.message : ""
+                            }
+                          />
+                        )}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        required
-                        fullWidth
-                        id="aadhar"
-                        label="Aadhar"
-                        name="Aadhar Number"
-                        autoComplete="given-aadhar"
-                        autoFocus
+                      <Controller
+                        name="aadhar"
+                        control={control}
+                        defaultValue=""
+                        rules={{
+                          required: "Aadhaar number is required",
+                          pattern: {
+                            value: /^[0-9]{12}$/,
+                            message: "Aadhaar number must be 12 digits",
+                          },
+                        }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Aadhaar Number"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.aadhaar}
+                            helperText={
+                              errors.aadhaar ? errors.aadhaar.message : ""
+                            }
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleAadhaarChange(e);
+                            }}
+                          />
+                        )}
                       />
                     </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        required
-                        fullWidth
-                        id="email"
-                        label="Email Address"
+                    <Grid item xs={12} sm={6}>
+                      <Controller
                         name="email"
-                        autoComplete="email"
-                        autoFocus
+                        control={control}
+                        defaultValue=""
+                        rules={{
+                          required: "Email is required",
+                          pattern: {
+                            value: /^\S+@\S+$/i,
+                            message:
+                              "Entered value does not match email format",
+                          },
+                        }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Email"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.email}
+                            helperText={
+                              errors.email ? errors.email.message : ""
+                            }
+                          />
+                        )}
                       />
                     </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        required
-                        fullWidth
-                        name="driving-licence"
-                        label="Driving Licence"
-                        type="text"
-                        id="driving-licence"
-                        autoComplete="driving-licence"
-                        autoFocus
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="drivingLicense"
+                        control={control}
+                        defaultValue=""
+                        rules={{
+                          required: "Driving license number is required",
+                        }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Driving License Number"
+                            variant="outlined"
+                            fullWidth
+                            error={!!errors.drivingLicense}
+                            helperText={
+                              errors.drivingLicense
+                                ? errors.drivingLicense.message
+                                : ""
+                            }
+                          />
+                        )}
                       />
                     </Grid>
-                  </Grid>
-                </Box>
 
-                <Box
-                  component="form"
-                  noValidate
-                  onSubmit={handleSubmit}
-                  sx={{ mt: 3 }}
-                >
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <FileUpload {...fileUploadProp} />
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      sx={{
+                        display: `${
+                          driverAadhar.length === 12 ? "block" : "none"
+                        }`,
+                      }}
+                    >
+                      <div>
+                        <label htmlFor="aadharFile">Upload Aadhaar Card</label>
+                        <input
+                          type="file"
+                          id="aadharFile"
+                          onChange={(e) => handleFileChange(e, "aadharFile")}
+                        />
+                      </div>
+                    </Grid>
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      sx={{
+                        display: `${
+                          driverAadhar.length === 12 ? "block" : "none"
+                        }`,
+                      }}
+                    >
+                      <div>
+                        <label htmlFor="drivingLicenseFile">
+                          Upload Driving License
+                        </label>
+                        <input
+                          type="file"
+                          id="drivingLicenseFile"
+                          onChange={(e) =>
+                            handleFileChange(e, "drivingLicenseFile")
+                          }
+                        />
+                      </div>
                     </Grid>
                   </Grid>
                 </Box>
