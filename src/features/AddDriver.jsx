@@ -14,25 +14,33 @@ import {
   ref as storageRef,
   uploadBytesResumable,
 } from "firebase/storage";
-import { notifySuccess, notifyWarning } from "../../toast";
+import { notifyError, notifySuccess, notifyWarning } from "../../toast";
 import { Controller, useForm } from "react-hook-form";
 import { useState } from "react";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { doc, setDoc } from "firebase/firestore";
+import LoadingButton from "@mui/lab/LoadingButton";
+import SaveIcon from "@mui/icons-material/Save";
 
 const defaultTheme = createTheme();
 
-const AddDriver = () => {
+const AddDriver = ({ fetchDrivers, openDriverModal, setOpenDriverModal }) => {
   const {
     handleSubmit,
     control,
     setValue,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      city: "HYD",
+    },
+  });
 
   const [driverAadhar, setDriverAadhar] = useState("");
   const [aadharUploaded, setAadharUploaded] = useState(false);
   const [dlNumUploaded, setDlNumUploaded] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const [aadharUrl, setAadharUrl] = useState("");
   const [dlUrl, setDLUrl] = useState("");
@@ -41,7 +49,7 @@ const AddDriver = () => {
     console.log(data);
 
     const driver = {
-      driverID: data.aadhar,
+      driverID: data.mobile,
       cityCode: data.city,
       cityName: data.city === "HYD" ? "Hyderabad" : "Tirupathi",
       firstName: data.firstName,
@@ -52,25 +60,30 @@ const AddDriver = () => {
       dlNumber: data.drivingLicense,
       aadharUrl,
       dlUrl,
+      createDateTiem: new Date(),
     };
-
+    setIsLoading(true);
     if (aadharUploaded && dlNumUploaded) {
       // saving user trip booking to cloud firestore
       const cityDrivers = data.city === "HYD" ? "HYDDRIVERS" : "TIRDRIVERS";
-
-      const docRef = doc(
-        firestoreDb,
-        `drivers/${data.city}/${cityDrivers}/${data.aadhar}`
-      );
-      await setDoc(docRef, driver)
-        .then((docRef) => {
-          console.log("created successfully");
-          console.log("261", docRef);
-          notifySuccess("Driver created successfully");
-        })
-        .catch((err) => console.log(err));
+      try {
+        const docRef = doc(
+          firestoreDb,
+          `drivers/${data.city}/${cityDrivers}/${data.mobile}`
+        );
+        await setDoc(docRef, driver);
+        console.log("created successfully");
+        notifySuccess("Driver created successfully");
+        setIsLoading(false);
+        fetchDrivers();
+        setOpenDriverModal(!openDriverModal);
+      } catch (err) {
+        console.error("Error creating document:", err);
+        notifyError("Error creating new driver", err.message);
+        setIsLoading(false);
+      }
     } else {
-      notifyWarning("Please upload aadhra and driving license");
+      notifyWarning("Please upload aadhar and driving license");
     }
   };
 
@@ -178,9 +191,12 @@ const AddDriver = () => {
                       labelId="demo-select-small-label"
                       id="demo-select-small"
                       label="city"
+                      defaultValue="HYD"
                     >
                       <MenuItem value="HYD">Hyderabad</MenuItem>
-                      <MenuItem value="TIR">Tirupathi</MenuItem>
+                      <MenuItem value="TIR" disabled>
+                        Tirupathi
+                      </MenuItem>
                     </Select>
                   )}
                 />
@@ -296,9 +312,9 @@ const AddDriver = () => {
                             label="Aadhaar Number"
                             variant="outlined"
                             fullWidth
-                            error={!!errors.aadhaar}
+                            error={!!errors.aadhar}
                             helperText={
-                              errors.aadhaar ? errors.aadhaar.message : ""
+                              errors.aadhar ? errors.aadhar.message : ""
                             }
                             onChange={(e) => {
                               field.onChange(e);
@@ -405,14 +421,28 @@ const AddDriver = () => {
                   </Grid>
                 </Box>
               </Box>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Create Account
-              </Button>
+              {!isLoading ? (
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={!aadharUploaded && !dlNumUploaded}
+                >
+                  Create Account
+                </Button>
+              ) : (
+                <LoadingButton
+                  loading
+                  loadingPosition="start"
+                  startIcon={<SaveIcon />}
+                  variant="outlined"
+                  fullWidth
+                  sx={{ mt: 5 }}
+                >
+                  Adding Driver
+                </LoadingButton>
+              )}
             </form>
           </Box>
         </Container>

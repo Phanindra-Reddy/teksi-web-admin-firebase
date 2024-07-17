@@ -8,9 +8,12 @@ import { Route, Routes } from "react-router-dom";
 import RequireAuth from "./auth/RequireAuth";
 import Bookings from "./features/Bookings";
 import Login from "./auth/Login";
-import AddDriver from "./features/AddDriver";
-import AddVehicle from "./features/AddVehicle";
 import Cancellations from "./features/Cancellations";
+import Revenue from "./features/Revenue/Revenue";
+import Users from "./features/Users/Users";
+import Feedback from "./features/Feedback/Feedback";
+import Drivers from "./features/Drivers";
+import Vehicles from "./features/Vehicles";
 
 function App() {
   useEffect(() => {
@@ -35,12 +38,21 @@ function App() {
           element={<RequireAuth Component={<Cancellations />} />}
         />
         <Route
-          path="/add-driver"
-          element={<RequireAuth Component={<AddDriver />} />}
+          path="/drivers"
+          element={<RequireAuth Component={<Drivers />} />}
         />
         <Route
-          path="/add-vehicle"
-          element={<RequireAuth Component={<AddVehicle />} />}
+          path="/vehicles"
+          element={<RequireAuth Component={<Vehicles />} />}
+        />
+        <Route
+          path="/revenue"
+          element={<RequireAuth Component={<Revenue />} />}
+        />
+        <Route path="/users" element={<RequireAuth Component={<Users />} />} />
+        <Route
+          path="/feedback"
+          element={<RequireAuth Component={<Feedback />} />}
         />
         <Route path="/login" element={<Login />} />
       </Routes>

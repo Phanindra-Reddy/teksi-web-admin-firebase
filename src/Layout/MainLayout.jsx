@@ -50,13 +50,13 @@ const sideNavRoutes = [
   },
   {
     key: "teksi_sidenav_option3",
-    route: "/add-driver",
+    route: "/drivers",
     name: "Drivers",
     icon: <PeopleAltIcon />,
   },
   {
     key: "teksi_sidenav_option4",
-    route: "/add-vehicle",
+    route: "/vehicles",
     name: "Vehicles",
     icon: <DirectionsCarIcon />,
   },
