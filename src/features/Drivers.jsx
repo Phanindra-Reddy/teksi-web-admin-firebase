@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, styled, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  styled,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { firestoreDb } from "../../firebase";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -13,8 +20,11 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import AddDriver from "./AddDriver";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import { notifyError, notifySuccess } from "../../toast";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -30,6 +40,12 @@ const Drivers = () => {
   const descriptionElementRef = useRef(null);
 
   const [openDriverModal, setOpenDriverModal] = useState(false);
+  const [openDriverDeleteModal, setOpenDriverDeleteModal] = useState(false);
+  const [openDriverEditModal, setOpenDriverEditModal] = useState(false);
+
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [enteredDriverId, setEnteredDriverId] = useState(null);
+
   const [drivers, setDrivers] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,6 +82,35 @@ const Drivers = () => {
     }
   }, [openDriverModal]);
 
+  const handleDeleteDriver = async () => {
+    if (enteredDriverId && selectedDriver) {
+      if (enteredDriverId.trim() === selectedDriver.driverId.trim()) {
+        const driverId = selectedDriver.trim();
+        try {
+          // Reference to the driver document
+          const driverRef = doc(
+            firestoreDb,
+            "drivers/HYD/HYDDRIVERS",
+            driverId
+          );
+
+          // Delete the document
+          await deleteDoc(driverRef);
+
+          console.log(`Driver with ID ${driverId} deleted successfully.`);
+          notifySuccess(`Driver with ID ${driverId} deleted successfully.`);
+          setOpenDriverDeleteModal(false);
+          setEnteredDriverId(null);
+          setSelectedDriver(null);
+          fetchDrivers();
+        } catch (error) {
+          console.error("Error deleting driver: ", error);
+          notifyError("Error deleting driver: ", error);
+        }
+      }
+    }
+  };
+
   if (isLoading) {
     return <Typography variant="h5">Loading drivers info...</Typography>;
   }
@@ -88,6 +133,7 @@ const Drivers = () => {
               <StyledTableCell align="left">Aadhar</StyledTableCell>
               <StyledTableCell align="left">Email</StyledTableCell>
               <StyledTableCell align="left">Driving License</StyledTableCell>
+              <StyledTableCell align="left">Actions</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -106,12 +152,27 @@ const Drivers = () => {
                 <TableCell align="left">{driver.aadhar}</TableCell>
                 <TableCell align="left">{driver.email}</TableCell>
                 <TableCell align="left">{driver.dlNumber}</TableCell>
+                <TableCell align="left">
+                  <IconButton aria-label="edit">
+                    <EditIcon sx={{ color: "blue" }} />
+                  </IconButton>
+                  <IconButton
+                    aria-label="delete"
+                    onClick={() => {
+                      setOpenDriverDeleteModal(true);
+                      setSelectedDriver(driver);
+                    }}
+                  >
+                    <DeleteIcon sx={{ color: "red" }} />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
+      {/* Driver Creation Dialog */}
       <Dialog
         open={openDriverModal}
         onClose={() => setOpenDriverModal(false)}
@@ -137,6 +198,49 @@ const Drivers = () => {
           <Button onClick={() => setOpenDriverModal(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Driver Delete Dialog */}
+      <Dialog
+        open={openDriverDeleteModal}
+        onClose={() => setOpenDriverDeleteModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Are you sure to delete this driver?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            <Typography>
+              Please enter below {selectedDriver} id to delete the driver.
+            </Typography>
+            <TextField
+              fullWidth
+              id="outlined-basic"
+              label="Enter the driver id"
+              variant="outlined"
+              sx={{ mb: 5, mt: 2 }}
+              value={enteredDriverId}
+              onChange={(e) => setEnteredDriverId(e.target.value)}
+            />
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDriverDeleteModal(false)}>
+            cancel
+          </Button>
+          <Button
+            onClick={handleDeleteDriver}
+            autoFocus
+            variant="contained"
+            color="error"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Driver Update Dialog */}
     </Box>
   );
 };

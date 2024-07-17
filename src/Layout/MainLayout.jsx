@@ -29,7 +29,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import FeedbackIcon from "@mui/icons-material/Feedback";
 import Groups2Icon from "@mui/icons-material/Groups2";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
 
@@ -85,11 +85,15 @@ const sideNavRoutes2 = [
 
 const MainLayout = ({ Component }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  console.log(location);
   const [openSideNav, setOpenSideNav] = useState(true);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
 
-  const [selectedRoute, setSelectedRoute] = useState("/");
+  const [selectedRoute, setSelectedRoute] = useState(
+    location.pathname ? location.pathname : "/"
+  );
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -111,7 +115,7 @@ const MainLayout = ({ Component }) => {
   const handleRouteClick = (event) => {
     setSelectedRoute(event);
   };
-  
+
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
