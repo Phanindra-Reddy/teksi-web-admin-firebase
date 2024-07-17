@@ -24,7 +24,7 @@ import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import AddDriver from "./AddDriver";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { notifyError, notifySuccess } from "../../toast";
+import { notifyError, notifySuccess, notifyWarning } from "../../toast";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -84,8 +84,8 @@ const Drivers = () => {
 
   const handleDeleteDriver = async () => {
     if (enteredDriverId && selectedDriver) {
-      if (enteredDriverId.trim() === selectedDriver.driverId.trim()) {
-        const driverId = selectedDriver.trim();
+      if (enteredDriverId.trim() === selectedDriver?.driverID?.trim()) {
+        const driverId = selectedDriver?.driverID?.trim();
         try {
           // Reference to the driver document
           const driverRef = doc(
@@ -108,6 +108,8 @@ const Drivers = () => {
           notifyError("Error deleting driver: ", error);
         }
       }
+    } else {
+      notifyWarning("Please enter the driver id");
     }
   };
 
@@ -212,7 +214,8 @@ const Drivers = () => {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             <Typography>
-              Please enter below {selectedDriver} id to delete the driver.
+              Please enter below {selectedDriver?.driverID} id to delete the
+              driver.
             </Typography>
             <TextField
               fullWidth
