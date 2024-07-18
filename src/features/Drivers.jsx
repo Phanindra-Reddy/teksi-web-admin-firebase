@@ -177,7 +177,14 @@ const Drivers = () => {
                   >
                     <RemoveRedEyeIcon />
                   </IconButton>
-                  <IconButton aria-label="edit">
+                  <IconButton
+                    aria-label="edit"
+                    onClick={() => {
+                      setOpenDriverEditModal(true);
+                      setOpenDriverModal(true);
+                      setSelectedDriver(driver);
+                    }}
+                  >
                     <EditIcon sx={{ color: "blue" }} />
                   </IconButton>
                   <IconButton
@@ -215,6 +222,7 @@ const Drivers = () => {
               fetchDrivers={fetchDrivers}
               openDriverModal={openDriverModal}
               setOpenDriverModal={setOpenDriverModal}
+              existingDriverData={openDriverEditModal ? selectedDriver : null}
             />
           </DialogContentText>
         </DialogContent>
@@ -313,7 +321,7 @@ const Drivers = () => {
                     <LocationOnIcon /> {selectedDriver?.cityName}
                   </Typography>
                 </Box>
-                <Box sx={{my:3}}>
+                <Box sx={{ my: 3 }}>
                   <Typography
                     variant="button"
                     display="block"

@@ -16,15 +16,21 @@ import {
 } from "firebase/storage";
 import { notifyError, notifySuccess, notifyWarning } from "../../toast";
 import { Controller, useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { doc, setDoc } from "firebase/firestore";
 import LoadingButton from "@mui/lab/LoadingButton";
 import SaveIcon from "@mui/icons-material/Save";
+import EditIcon from "@mui/icons-material/Edit";
 
 const defaultTheme = createTheme();
 
-const AddDriver = ({ fetchDrivers, openDriverModal, setOpenDriverModal }) => {
+const AddDriver = ({
+  fetchDrivers,
+  openDriverModal,
+  setOpenDriverModal,
+  existingDriverData = null,
+}) => {
   const {
     handleSubmit,
     control,
@@ -44,6 +50,24 @@ const AddDriver = ({ fetchDrivers, openDriverModal, setOpenDriverModal }) => {
 
   const [aadharUrl, setAadharUrl] = useState("");
   const [dlUrl, setDLUrl] = useState("");
+
+  useEffect(() => {
+    if (existingDriverData) {
+      // Populate form with existing driver data
+      setValue("firstName", existingDriverData.firstName);
+      setValue("lastName", existingDriverData.lastName);
+      setValue("mobile", existingDriverData.mobile);
+      setValue("aadhar", existingDriverData.aadhar);
+      setValue("email", existingDriverData.email);
+      setValue("drivingLicense", existingDriverData.dlNumber);
+      setValue("city", existingDriverData.cityCode);
+      setDriverAadhar(existingDriverData.aadhar);
+      setAadharUrl(existingDriverData.aadharUrl);
+      setDLUrl(existingDriverData.dlUrl);
+      setAadharUploaded(true);
+      setDlNumUploaded(true);
+    }
+  }, [existingDriverData, setValue]);
 
   const onSubmit = async (data) => {
     console.log(data);
@@ -168,10 +192,21 @@ const AddDriver = ({ fetchDrivers, openDriverModal, setOpenDriverModal }) => {
                   justifyContent: "start",
                 }}
               >
-                <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-                  <PersonAddIcon />
-                </Avatar>
-                Add New Driver
+                {existingDriverData.mobile ? (
+                  <>
+                    <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+                      <EditIcon />
+                    </Avatar>
+                    Update Driver
+                  </>
+                ) : (
+                  <>
+                    <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+                      <PersonAddIcon />
+                    </Avatar>
+                    Add New Driver
+                  </>
+                )}
               </Typography>
               <FormControl
                 sx={{ m: 1, minWidth: 160 }}
@@ -374,6 +409,32 @@ const AddDriver = ({ fetchDrivers, openDriverModal, setOpenDriverModal }) => {
                           />
                         )}
                       />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <img
+                          srcSet={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                          src={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format`}
+                          alt={existingDriverData?.aadhar}
+                          loading="lazy"
+                          style={{ width: "50%" }}
+                        />
+
+                        <img
+                          srcSet={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                          src={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format`}
+                          alt={existingDriverData?.dlNumber}
+                          loading="lazy"
+                          style={{ width: "50%" }}
+                        />
+                      </Box>
                     </Grid>
 
                     <Grid
