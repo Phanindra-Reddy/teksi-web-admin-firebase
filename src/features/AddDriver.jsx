@@ -30,6 +30,7 @@ const AddDriver = ({
   openDriverModal,
   setOpenDriverModal,
   existingDriverData = null,
+  openDriverEditModal,
 }) => {
   const {
     handleSubmit,
@@ -192,7 +193,7 @@ const AddDriver = ({
                   justifyContent: "start",
                 }}
               >
-                {existingDriverData.mobile ? (
+                {existingDriverData?.mobile ? (
                   <>
                     <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                       <EditIcon />
@@ -412,29 +413,31 @@ const AddDriver = ({
                     </Grid>
 
                     <Grid item xs={12}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <img
-                          srcSet={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                          src={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format`}
-                          alt={existingDriverData?.aadhar}
-                          loading="lazy"
-                          style={{ width: "50%" }}
-                        />
+                      {openDriverEditModal && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <img
+                            srcSet={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                            src={`${existingDriverData?.aadharUrl}?w=248&fit=crop&auto=format`}
+                            alt={existingDriverData?.aadhar}
+                            loading="lazy"
+                            style={{ width: "50%" }}
+                          />
 
-                        <img
-                          srcSet={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                          src={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format`}
-                          alt={existingDriverData?.dlNumber}
-                          loading="lazy"
-                          style={{ width: "50%" }}
-                        />
-                      </Box>
+                          <img
+                            srcSet={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                            src={`${existingDriverData?.dlUrl}?w=248&fit=crop&auto=format`}
+                            alt={existingDriverData?.dlNumber}
+                            loading="lazy"
+                            style={{ width: "50%" }}
+                          />
+                        </Box>
+                      )}
                     </Grid>
 
                     <Grid

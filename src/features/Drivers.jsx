@@ -4,9 +4,6 @@ import {
   Box,
   Button,
   IconButton,
-  ImageList,
-  ImageListItem,
-  ListSubheader,
   styled,
   TextField,
   Typography,
@@ -132,7 +129,9 @@ const Drivers = () => {
   return (
     <Box>
       <Button
-        onClick={() => setOpenDriverModal(true)}
+        onClick={() => {
+          setOpenDriverModal(true);
+        }}
         sx={{ mb: 5, float: "right" }}
         variant="contained"
       >
@@ -206,7 +205,11 @@ const Drivers = () => {
       {/* Driver Creation Dialog */}
       <Dialog
         open={openDriverModal}
-        onClose={() => setOpenDriverModal(false)}
+        onClose={() => {
+          setOpenDriverModal(false);
+          setSelectedDriver(null);
+          setOpenDriverEditModal(false);
+        }}
         scroll="paper"
         aria-labelledby="scroll-dialog-title"
         aria-describedby="scroll-dialog-description"
@@ -223,11 +226,22 @@ const Drivers = () => {
               openDriverModal={openDriverModal}
               setOpenDriverModal={setOpenDriverModal}
               existingDriverData={openDriverEditModal ? selectedDriver : null}
+              setSelectedDriver={setSelectedDriver}
+              setOpenDriverEditModal={setOpenDriverEditModal}
+              openDriverEditModal={openDriverEditModal}
             />
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDriverModal(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setOpenDriverModal(false);
+              setSelectedDriver(null);
+              setOpenDriverEditModal(false);
+            }}
+          >
+            Cancel
+          </Button>
         </DialogActions>
       </Dialog>
 
