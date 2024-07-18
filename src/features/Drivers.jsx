@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Avatar,
   Box,
   Button,
   IconButton,
+  ImageList,
+  ImageListItem,
+  ListSubheader,
   styled,
   TextField,
   Typography,
@@ -24,7 +28,15 @@ import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import AddDriver from "./AddDriver";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import CallIcon from "@mui/icons-material/Call";
+import MarkunreadIcon from "@mui/icons-material/Markunread";
+import ContactEmergencyIcon from "@mui/icons-material/ContactEmergency";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import { notifyError, notifySuccess, notifyWarning } from "../../toast";
+import { blue } from "@mui/material/colors";
+import { getInitials } from "../utils/utils";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -42,6 +54,7 @@ const Drivers = () => {
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [openDriverDeleteModal, setOpenDriverDeleteModal] = useState(false);
   const [openDriverEditModal, setOpenDriverEditModal] = useState(false);
+  const [openViewDriverModal, setOpenViewDriverModal] = useState(false);
 
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [enteredDriverId, setEnteredDriverId] = useState(null);
@@ -155,6 +168,15 @@ const Drivers = () => {
                 <TableCell align="left">{driver.email}</TableCell>
                 <TableCell align="left">{driver.dlNumber}</TableCell>
                 <TableCell align="left">
+                  <IconButton
+                    aria-label="view"
+                    onClick={() => {
+                      setOpenViewDriverModal(true);
+                      setSelectedDriver(driver);
+                    }}
+                  >
+                    <RemoveRedEyeIcon />
+                  </IconButton>
                   <IconButton aria-label="edit">
                     <EditIcon sx={{ color: "blue" }} />
                   </IconButton>
@@ -243,7 +265,139 @@ const Drivers = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Driver Update Dialog */}
+      {/* Driver View Dialog */}
+      <Dialog
+        fullWidth
+        open={openViewDriverModal}
+        onClose={() => setOpenViewDriverModal(false)}
+        scroll="paper"
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+        maxWidth="sm"
+      >
+        <DialogTitle id="scroll-dialog-title"></DialogTitle>
+        <DialogContent dividers={scroll === "paper"}>
+          <DialogContentText
+            id="scroll-dialog-description"
+            ref={descriptionElementRef}
+            tabIndex={-1}
+          >
+            {selectedDriver?.driverID && (
+              <Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <Avatar sx={{ bgcolor: blue[500] }}>
+                      {getInitials(
+                        selectedDriver?.firstName,
+                        selectedDriver?.lastName
+                      )}
+                    </Avatar>
+                    {selectedDriver?.firstName} {selectedDriver?.lastName}
+                  </Typography>
+                  <Typography
+                    variant="p"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <LocationOnIcon /> {selectedDriver?.cityName}
+                  </Typography>
+                </Box>
+                <Box sx={{my:3}}>
+                  <Typography
+                    variant="button"
+                    display="block"
+                    gutterBottom
+                    sx={{
+                      fontStyle: "lowercase",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <CallIcon /> {selectedDriver?.mobile}
+                  </Typography>
+                  <Typography
+                    variant="button"
+                    display="block"
+                    gutterBottom
+                    sx={{
+                      fontStyle: "lowercase",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <MarkunreadIcon /> {selectedDriver?.email}
+                  </Typography>{" "}
+                  <Typography
+                    variant="button"
+                    display="block"
+                    gutterBottom
+                    sx={{
+                      fontStyle: "lowercase",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <ContactEmergencyIcon /> {selectedDriver?.aadhar}
+                  </Typography>
+                  <Typography
+                    variant="button"
+                    display="block"
+                    gutterBottom
+                    sx={{
+                      fontStyle: "lowercase",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <DirectionsCarIcon /> {selectedDriver?.dlNumber}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <img
+                    srcSet={`${selectedDriver?.aadharUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                    src={`${selectedDriver?.aadharUrl}?w=248&fit=crop&auto=format`}
+                    alt={selectedDriver?.aadhar}
+                    loading="lazy"
+                    style={{ width: "50%" }}
+                  />
+
+                  <img
+                    srcSet={`${selectedDriver?.dlUrl}?w=248&fit=crop&auto=format&dpr=2 2x`}
+                    src={`${selectedDriver?.dlUrl}?w=248&fit=crop&auto=format`}
+                    alt={selectedDriver?.dlNumber}
+                    loading="lazy"
+                    style={{ width: "50%" }}
+                  />
+                </Box>
+              </Box>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenViewDriverModal(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
