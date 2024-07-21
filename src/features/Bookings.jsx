@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { ref, onValue, update } from "firebase/database";
 import {
   Box,
   Button,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -10,6 +11,7 @@ import {
   DialogTitle,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -34,6 +36,8 @@ import { LoadingButton } from "@mui/lab";
 import SaveIcon from "@mui/icons-material/Save";
 import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import { notifyError, notifySuccess } from "../../toast";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -75,6 +79,8 @@ const Bookings = () => {
 
   const [drivers, setDrivers] = useState(null);
   const [isDriverAssigning, setIsDriverAssigning] = useState(false);
+
+  const [openTableColumn, setOpenTableColumn] = useState("");
 
   const fetchTrips = async () => {
     setIsLoading(true);
@@ -157,8 +163,8 @@ const Bookings = () => {
       ]).then(() => {
         console.log("updated");
         notifySuccess("Driver assigned successfully!");
-        setOpenAssignDriverModal(false)
-        setSelectedUser(null)
+        setOpenAssignDriverModal(false);
+        setSelectedUser(null);
       });
 
       console.log("Driver assigned successfully!");
@@ -176,11 +182,17 @@ const Bookings = () => {
 
   return (
     <div>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+      <TableContainer component={Paper} sx={{ maxHeight: 640 }}>
+        <Table
+          stickyHeader
+          sx={{ minWidth: 650 }}
+          aria-label="sticky header table"
+        >
           <TableHead>
             <TableRow>
-              <StyledTableCell>Name</StyledTableCell>
+              <StyledTableCell>button</StyledTableCell>
+              <StyledTableCell>S.No</StyledTableCell>
+              <StyledTableCell align="left">Name</StyledTableCell>
               <StyledTableCell align="left">Mobile</StyledTableCell>
               <StyledTableCell align="left">Origin</StyledTableCell>
               <StyledTableCell align="left">Destination</StyledTableCell>
@@ -190,41 +202,79 @@ const Bookings = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {trips?.map((trip) => (
-              <TableRow
-                key={trip.trip_id}
-                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-              >
-                <TableCell component="th" scope="row">
-                  {trip?.customerName}
-                </TableCell>
-                <TableCell align="left">{trip.customerMobile}</TableCell>
-                <TableCell align="left">{trip.origin}</TableCell>
-                <TableCell align="left">{trip.destination}</TableCell>
-                <TableCell align="left">
-                  {trip.pickup_date}
-                  {"  "}
-                  {trip.pickup_time}
-                </TableCell>
-                <TableCell align="left">{trip.total_trip_fare}</TableCell>
-                <TableCell align="left">
-                  {trip.assignedDriverId ? (
-                    trip.assignedDriverName
-                  ) : (
-                    <Button
-                      variant="contained"
-                      onClick={() => {
-                        fetchDrivers();
-                        setSelectedUser(trip);
-                        setOpenAssignDriverModal(true);
-                      }}
+            <>
+              {trips?.map((trip, index) => (
+                <Fragment key={trip?.trip_id}>
+                  <TableRow
+                    key={trip.trip_id}
+                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                  >
+                    <TableCell align="left">
+                      <IconButton
+                        aria-label="expand row"
+                        size="small"
+                        onClick={() => setOpenTableColumn(trip.trip_id)}
+                      >
+                        {openTableColumn === trip.trip_id ? (
+                          <KeyboardArrowUpIcon />
+                        ) : (
+                          <KeyboardArrowDownIcon />
+                        )}
+                      </IconButton>
+                    </TableCell>
+                    <TableCell component="th" scope="row">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell component="th" scope="row">
+                      {trip?.customerName}
+                    </TableCell>
+                    <TableCell align="left">{trip.customerMobile}</TableCell>
+                    <TableCell align="left">{trip.origin}</TableCell>
+                    <TableCell align="left">{trip.destination}</TableCell>
+                    <TableCell align="left">
+                      {trip.pickup_date}
+                      {"  "}
+                      {trip.pickup_time}
+                    </TableCell>
+                    <TableCell align="left">{trip.total_trip_fare}</TableCell>
+                    <TableCell align="left">
+                      {trip.assignedDriverId ? (
+                        trip.assignedDriverName
+                      ) : (
+                        <Button
+                          variant="contained"
+                          onClick={() => {
+                            fetchDrivers();
+                            setSelectedUser(trip);
+                            setOpenAssignDriverModal(true);
+                          }}
+                        >
+                          Assign
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell
+                      style={{ paddingBottom: 0, paddingTop: 0 }}
+                      colSpan={6}
                     >
-                      Assign
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                      <Collapse
+                        in={openTableColumn === trip.trip_id}
+                        timeout="auto"
+                        unmountOnExit
+                      >
+                        <Box sx={{ margin: 1 }}>
+                          <Typography variant="h6" gutterBottom component="div">
+                            Hello World {trip.trip_id}
+                          </Typography>
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </Fragment>
+              ))}
+            </>
           </TableBody>
         </Table>
       </TableContainer>
