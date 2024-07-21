@@ -1,7 +1,22 @@
-import { useEffect, useState } from "react";
-import { ref, onValue } from "firebase/database";
-import { styled, Typography } from "@mui/material";
-import { realDb } from "../../firebase";
+import { useEffect, useRef, useState } from "react";
+import { ref, onValue, update } from "firebase/database";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  styled,
+  Typography,
+} from "@mui/material";
+import { firestoreDb, realDb } from "../../firebase";
 
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -10,7 +25,15 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-
+import { useDispatch } from "react-redux";
+import { setAdminNotViwedTripsCount } from "../redux/slices/bookingSlice";
+import CallIcon from "@mui/icons-material/Call";
+import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import { Controller, useForm } from "react-hook-form";
+import { LoadingButton } from "@mui/lab";
+import SaveIcon from "@mui/icons-material/Save";
+import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
+import { notifyError, notifySuccess } from "../../toast";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -22,25 +45,50 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
+const day = String(new Date().getDate());
+const month = String(new Date().getMonth() + 1);
+const year = String(new Date().getFullYear());
+
+const todayDate = day + month + year;
+
 const Bookings = () => {
+  const {
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+    watch,
+  } = useForm({
+    defaultValues: {
+      city: "HYD",
+    },
+  });
+
+  const dispatch = useDispatch();
+  const descriptionElementRef = useRef(null);
+
   const [trips, setTrips] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchTrips = async () => {
-      setIsLoading(true);
-      
-      const day = String(new Date().getDate());
-      const month = String(new Date().getMonth() + 1);
-      const year = String(new Date().getFullYear());
+  const [openAssignDriverModal, setOpenAssignDriverModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-      const todayDate = day + month + year;
+  const [drivers, setDrivers] = useState(null);
+  const [isDriverAssigning, setIsDriverAssigning] = useState(false);
+
+  const fetchTrips = async () => {
+    setIsLoading(true);
 
     try {
       const starCountRef = ref(realDb, `bookings/${todayDate}`);
       onValue(starCountRef, (snapshot) => {
         const data = snapshot.val();
         console.log(data);
+        const notViewedCount = Object.values(data)?.filter(
+          (trip) => !trip.isAdminViewed
+        );
         setTrips(Object.values(data));
+        dispatch(setAdminNotViwedTripsCount(notViewedCount?.length));
       });
     } catch (error) {
       console.log(error);
@@ -49,53 +97,244 @@ const Bookings = () => {
     }
   };
 
+  const fetchDrivers = async () => {
+    try {
+      const querySnapshot = await getDocs(
+        collection(firestoreDb, "drivers/HYD/HYDDRIVERS")
+      );
+      const dataList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setDrivers(dataList);
+    } catch (error) {
+      console.log(error, error.message);
+    }
+  };
   useEffect(() => {
     fetchTrips();
   }, []);
+
+  useEffect(() => {
+    if (openAssignDriverModal) {
+      const { current: descriptionElement } = descriptionElementRef;
+      if (descriptionElement !== null) {
+        descriptionElement.focus();
+      }
+    }
+  }, [openAssignDriverModal]);
+
+  const onSubmit = async (data) => {
+    const filterDriver = drivers.filter(
+      (driver) => driver.driverID === data.driver
+    );
+    console.log(data, filterDriver, selectedUser);
+    setIsDriverAssigning(true);
+
+    try {
+      const docRef = doc(
+        firestoreDb,
+        `users/${selectedUser?.userId}/trips/${selectedUser?.trip_id}`
+      );
+
+      const realDbRef = ref(
+        realDb,
+        `bookings/${todayDate}/${selectedUser?.trip_id}`
+      );
+
+      await Promise.all([
+        //realtime driver update
+        update(realDbRef, {
+          assignedDriverId: data.driver,
+          assignedDriverName: `${filterDriver?.[0]?.firstName} ${filterDriver?.[0]?.lastName}`,
+        }),
+        //firestore driver update
+        updateDoc(docRef, {
+          assignedDriverId: data.driver,
+          assignedDriverName: `${filterDriver?.[0]?.firstName} ${filterDriver?.[0]?.lastName}`,
+        }),
+      ]).then(() => {
+        console.log("updated");
+        notifySuccess("Driver assigned successfully!");
+        setOpenAssignDriverModal(false)
+        setSelectedUser(null)
+      });
+
+      console.log("Driver assigned successfully!");
+    } catch (error) {
+      console.log(error);
+      notifyError("Error updating driver", error);
+    } finally {
+      setIsDriverAssigning(false);
+    }
+  };
 
   if (isLoading) {
     return <Typography variant="h2">Loading trips...</Typography>;
   }
 
-    return (
-      <div>
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <StyledTableCell>Name</StyledTableCell>
-                <StyledTableCell align="left">City</StyledTableCell>
-                <StyledTableCell align="left">Origin</StyledTableCell>
-                <StyledTableCell align="left">Destination</StyledTableCell>
-                <StyledTableCell align="left">Pickup Date & Time</StyledTableCell>
-                <StyledTableCell align="left">Trip Fare</StyledTableCell>
+  return (
+    <div>
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>Name</StyledTableCell>
+              <StyledTableCell align="left">Mobile</StyledTableCell>
+              <StyledTableCell align="left">Origin</StyledTableCell>
+              <StyledTableCell align="left">Destination</StyledTableCell>
+              <StyledTableCell align="left">Pickup Date & Time</StyledTableCell>
+              <StyledTableCell align="left">Trip Fare</StyledTableCell>
+              <StyledTableCell align="left">Assigned Driver</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {trips?.map((trip) => (
+              <TableRow
+                key={trip.trip_id}
+                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+              >
+                <TableCell component="th" scope="row">
+                  {trip?.customerName}
+                </TableCell>
+                <TableCell align="left">{trip.customerMobile}</TableCell>
+                <TableCell align="left">{trip.origin}</TableCell>
+                <TableCell align="left">{trip.destination}</TableCell>
+                <TableCell align="left">
+                  {trip.pickup_date}
+                  {"  "}
+                  {trip.pickup_time}
+                </TableCell>
+                <TableCell align="left">{trip.total_trip_fare}</TableCell>
+                <TableCell align="left">
+                  {trip.assignedDriverId ? (
+                    trip.assignedDriverName
+                  ) : (
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        fetchDrivers();
+                        setSelectedUser(trip);
+                        setOpenAssignDriverModal(true);
+                      }}
+                    >
+                      Assign
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {trips?.map((trip) => (
-                <TableRow
-                  key={trip.trip_id}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    {trip?.trip_id}
-                  </TableCell>
-                  <TableCell align="left">{trip.cityName}</TableCell>
-                  <TableCell align="left">{trip.origin}</TableCell>
-                  <TableCell align="left">{trip.destination}</TableCell>
-                  <TableCell align="left">
-                    {trip.pickup_date}
-                    {"  "}
-                    {trip.pickup_time}
-                  </TableCell>
-                  <TableCell align="left">{trip.total_trip_fare}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </div>
-    );
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Assign Driver Modal */}
+      <Dialog
+        fullWidth
+        open={openAssignDriverModal}
+        onClose={() => setOpenAssignDriverModal(false)}
+        scroll="paper"
+        aria-labelledby="scroll-dialog-title"
+        aria-describedby="scroll-dialog-description"
+        maxWidth="sm"
+      >
+        <DialogTitle id="scroll-dialog-title">
+          Assign Driver to {selectedUser?.customerName}
+        </DialogTitle>
+        <DialogContent dividers={scroll === "paper"}>
+          <DialogContentText
+            id="scroll-dialog-description"
+            ref={descriptionElementRef}
+            tabIndex={-1}
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <CallIcon /> {selectedUser?.customerMobile}
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <AccessTimeFilledIcon />{" "}
+              <Typography>
+                {selectedUser?.pickup_date} {selectedUser?.pickup_time}
+              </Typography>{" "}
+            </Box>
+          </DialogContentText>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Grid item xs={12} sm={6} sx={{ my: 5 }}>
+              <FormControl fullWidth>
+                <InputLabel id="driver-select-label">Select Driver</InputLabel>
+
+                <Controller
+                  name="driver"
+                  control={control}
+                  defaultValue=""
+                  render={({ field }) => (
+                    <Select
+                      id="demo-simple-select"
+                      labelId="driver-select-label"
+                      label="Select Driver"
+                      {...field}
+                      onChange={(event) => {
+                        setValue("driver", event.target.value);
+                      }}
+                    >
+                      {drivers?.map((driver) => (
+                        <MenuItem key={driver.driverID} value={driver.driverID}>
+                          {driver.firstName} {driver.lastName}{" "}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </FormControl>
+            </Grid>
+            {!isDriverAssigning ? (
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+              >
+                Assign Driver
+              </Button>
+            ) : (
+              <LoadingButton
+                loading
+                loadingPosition="start"
+                startIcon={<SaveIcon />}
+                variant="outlined"
+                fullWidth
+                sx={{ mt: 5 }}
+              >
+                Assigning Driver
+              </LoadingButton>
+            )}
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAssignDriverModal(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
 };
 
 export default Bookings;

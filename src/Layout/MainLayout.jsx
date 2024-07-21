@@ -12,7 +12,9 @@ import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import {
+  Badge,
   CssBaseline,
   Divider,
   Drawer,
@@ -30,6 +32,8 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import FeedbackIcon from "@mui/icons-material/Feedback";
 import Groups2Icon from "@mui/icons-material/Groups2";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { getAdminNotViwedTripsCount } from "../redux/slices/bookingSlice";
 
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
 
@@ -86,7 +90,9 @@ const sideNavRoutes2 = [
 const MainLayout = ({ Component }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const adminNotViwedTripsCount = useSelector(getAdminNotViwedTripsCount);
   console.log(location);
+
   const [openSideNav, setOpenSideNav] = useState(true);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -149,11 +155,23 @@ const MainLayout = ({ Component }) => {
             />
           </Typography>
           <Box sx={{ flexGrow: 0 }}>
+            <IconButton
+              size="large"
+              aria-label="show 17 new notifications"
+              color="inherit"
+              sx={{ mr: 4 }}
+            >
+              <Badge badgeContent={adminNotViwedTripsCount} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
+
             <Menu
               sx={{ mt: "45px" }}
               id="menu-appbar"
