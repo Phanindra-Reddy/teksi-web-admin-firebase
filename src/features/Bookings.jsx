@@ -38,6 +38,9 @@ import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import { notifyError, notifySuccess } from "../../toast";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import EmailIcon from "@mui/icons-material/Email";
+import { getDateTime } from "../utils/utils";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -209,7 +212,7 @@ const Bookings = () => {
                     key={trip.trip_id}
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                   >
-                    <TableCell align="left">
+                    <TableCell>
                       <IconButton
                         aria-label="expand row"
                         size="small"
@@ -222,8 +225,28 @@ const Bookings = () => {
                         )}
                       </IconButton>
                     </TableCell>
-                    <TableCell component="th" scope="row">
-                      {index + 1}
+                    <TableCell align="left">
+                      <div
+                        style={{
+                          height: "24px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        {index + 1}
+                        <p
+                          style={{
+                            minWidth: "90px",
+                            color: "white",
+                            background: `${trip?.toAirport ? "red" : "green"}`,
+                            borderRadius: "20px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {trip?.toAirport ? "To Airport" : "From Airport"}
+                        </p>
+                      </div>
                     </TableCell>
                     <TableCell component="th" scope="row">
                       {trip?.customerName}
@@ -257,17 +280,55 @@ const Bookings = () => {
                   <TableRow>
                     <TableCell
                       style={{ paddingBottom: 0, paddingTop: 0 }}
-                      colSpan={6}
+                      colSpan={10}
                     >
                       <Collapse
                         in={openTableColumn === trip.trip_id}
                         timeout="auto"
                         unmountOnExit
                       >
-                        <Box sx={{ margin: 1 }}>
-                          <Typography variant="h6" gutterBottom component="div">
-                            Hello World {trip.trip_id}
-                          </Typography>
+                        <Box
+                          sx={{
+                            p: 4,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Button variant="outlined" color="error">
+                            Cancel Trip
+                          </Button>
+                          <form
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <FormControl
+                              sx={{ m: 1, minWidth: 180 }}
+                              size="small"
+                            >
+                              <InputLabel id="demo-simple-select-label">
+                                Update Trip Status
+                              </InputLabel>
+                              <Select
+                                labelId="demo-simple-select-label"
+                                id="demo-simple-select"
+                                value=""
+                                label="Update Trip Status"
+                                onChange={() => {}}
+                              >
+                                <MenuItem value="Completed">Completed</MenuItem>
+                                <MenuItem value="Ongoing">Ongoing</MenuItem>
+                                <MenuItem value="Completed">Completed</MenuItem>
+                                <MenuItem value="Cancelled">Cancelled</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <Button type="submit" variant="contained">
+                              Save Status
+                            </Button>
+                          </form>
                         </Box>
                       </Collapse>
                     </TableCell>
