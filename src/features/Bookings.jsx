@@ -304,6 +304,7 @@ const Bookings = () => {
                               alignItems: "center",
                               gap: 2,
                             }}
+                            
                           >
                             <FormControl
                               sx={{ m: 1, minWidth: 180 }}
@@ -317,7 +318,8 @@ const Bookings = () => {
                                 id="demo-simple-select"
                                 value=""
                                 label="Update Trip Status"
-                                onChange={() => {}}
+                                onChange={() => { }}
+                                
                               >
                                 <MenuItem value="Completed">Completed</MenuItem>
                                 <MenuItem value="Ongoing">Ongoing</MenuItem>
