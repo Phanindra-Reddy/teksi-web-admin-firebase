@@ -41,6 +41,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import EmailIcon from "@mui/icons-material/Email";
 import { getDateTime } from "../utils/utils";
+import axios from "axios";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -92,7 +93,7 @@ const Bookings = () => {
       const starCountRef = ref(realDb, `bookings/${todayDate}`);
       onValue(starCountRef, (snapshot) => {
         const data = snapshot.val();
-        console.log(data);
+        console.log("bookings", data);
         const notViewedCount = Object.values(data)?.filter(
           (trip) => !trip.isAdminViewed
         );
@@ -134,6 +135,66 @@ const Bookings = () => {
     }
   }, [openAssignDriverModal]);
 
+  const sendNotification = async (filteredDriver, selectedUser) => {
+    const driver = filteredDriver?.[0];
+    const user = selectedUser;
+
+    console.log(driver, user);
+
+    const data = {
+      userBookingDetails: {
+        template_name: "share_driverdetails_to_user",
+        broadcast_name: "share_driverdetails_to_user",
+        parameters: [
+          {
+            customer_name: user.customerName,
+          },
+          {
+            driver_name: `${driver?.firstName} ${driver?.lastName}`,
+          },
+          {
+            driver_mobile: driver?.mobile,
+          },
+          {
+            vehicle_no: "TS08PB2381",
+          },
+        ],
+        waId: user.customerMobile, // user mobile no
+      },
+      driverBookingDetails: {
+        template_name: "share_bookingdetails_to_driver",
+        broadcast_name: "share_bookingdetails_to_driver",
+        parameters: [
+          {
+            customer_name: user.customerName,
+          },
+          {
+            customer_mobile: user.customerMobile,
+          },
+          {
+            customer_otp: "9253",
+          },
+          {
+            customer_pickup: user.origin,
+          },
+          {
+            customer_dropoff: user.destination,
+          },
+          {
+            customer_pickupdatetime: "21/07/2024 08:45 PM",
+          },
+        ],
+        waId: driver?.mobile, //driver mobile no
+      },
+    };
+
+    const res = axios.post(
+      "https://notifybookingdetails-e4k646dp4q-uc.a.run.app",
+      data
+    );
+    console.log("notifications response", res);
+  };
+
   const onSubmit = async (data) => {
     const filterDriver = drivers.filter(
       (driver) => driver.driverID === data.driver
@@ -144,7 +205,7 @@ const Bookings = () => {
     try {
       const docRef = doc(
         firestoreDb,
-        `users/${selectedUser?.userId}/trips/${selectedUser?.trip_id}`
+        `users/${selectedUser?.customerMobile}/trips/${selectedUser?.trip_id}`
       );
 
       const realDbRef = ref(
@@ -168,6 +229,7 @@ const Bookings = () => {
         notifySuccess("Driver assigned successfully!");
         setOpenAssignDriverModal(false);
         setSelectedUser(null);
+        sendNotification(filterDriver, selectedUser);
       });
 
       console.log("Driver assigned successfully!");
@@ -178,6 +240,8 @@ const Bookings = () => {
       setIsDriverAssigning(false);
     }
   };
+
+  console.log(trips);
 
   if (isLoading) {
     return <Typography variant="h2">Loading trips...</Typography>;
@@ -304,7 +368,6 @@ const Bookings = () => {
                               alignItems: "center",
                               gap: 2,
                             }}
-                            
                           >
                             <FormControl
                               sx={{ m: 1, minWidth: 180 }}
@@ -318,8 +381,7 @@ const Bookings = () => {
                                 id="demo-simple-select"
                                 value=""
                                 label="Update Trip Status"
-                                onChange={() => { }}
-                                
+                                onChange={() => {}}
                               >
                                 <MenuItem value="Completed">Completed</MenuItem>
                                 <MenuItem value="Ongoing">Ongoing</MenuItem>
