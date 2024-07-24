@@ -143,8 +143,8 @@ const Bookings = () => {
 
     const data = {
       userBookingDetails: {
-        template_name: "share_driverdetails_to_user",
-        broadcast_name: "share_driverdetails_to_user",
+        template_name: "share_driverdetails_touser",
+        broadcast_name: "share_driverdetails_touser",
         parameters: [
           {
             customer_name: user.customerName,
@@ -325,7 +325,7 @@ const Bookings = () => {
                     </TableCell>
                     <TableCell align="left">{trip.total_trip_fare}</TableCell>
                     <TableCell align="left">
-                      {trip.assignedDriverId ? (
+                      {/* {trip.assignedDriverId ? (
                         trip.assignedDriverName
                       ) : (
                         <Button
@@ -338,7 +338,18 @@ const Bookings = () => {
                         >
                           Assign
                         </Button>
-                      )}
+                      )} */}
+                      {trip.assignedDriverName}
+                      <Button
+                        variant="contained"
+                        onClick={() => {
+                          fetchDrivers();
+                          setSelectedUser(trip);
+                          setOpenAssignDriverModal(true);
+                        }}
+                      >
+                        Assign
+                      </Button>
                     </TableCell>
                   </TableRow>
                   <TableRow>
