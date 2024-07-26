@@ -158,6 +158,9 @@ const Bookings = () => {
           {
             vehicle_no: "TS08PB2381",
           },
+          {
+            ride_otp: "9988",
+          },
         ],
         waId: user.customerMobile, // user mobile no
       },
