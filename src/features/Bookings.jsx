@@ -140,39 +140,52 @@ const Bookings = () => {
     const user = selectedUser;
 
     console.log(driver, user);
-
+    const whatsappNumber =
+      user?.customerMobile && user.guest_mobile
+        ? [user.customerMobile, user.guest_mobile]
+        : [user.customerMobile];
     const data = {
       userBookingDetails: {
         template_name: "share_driverdetails_touser",
         broadcast_name: "share_driverdetails_touser",
-        parameters: [
+        receivers: [
           {
-            customer_name: user.customerName,
-          },
-          {
-            driver_name: `${driver?.firstName} ${driver?.lastName}`,
-          },
-          {
-            driver_mobile: driver?.mobile,
-          },
-          {
-            vehicle_no: "TS08PB2381",
-          },
-          {
-            ride_otp: "9988",
+            whatsappNumber,
+            customParams: [
+              {
+                customer_name: user.customerName,
+              },
+              {
+                driver_name: `${driver?.firstName} ${driver?.lastName}`,
+              },
+              {
+                driver_mobile: driver?.mobile,
+              },
+              {
+                vehicle_no: user?.assignedVehicleId
+                  ? user?.assignedVehicleId
+                  : "",
+              },
+              {
+                ride_otp: "9988",
+              },
+            ],
           },
         ],
-        waId: user.customerMobile, // user mobile no
       },
       driverBookingDetails: {
         template_name: "share_bookingdetails_to_driver",
         broadcast_name: "share_bookingdetails_to_driver",
         parameters: [
           {
-            customer_name: user.customerName,
+            customer_name: user.guest_mobile
+              ? user.guest_name
+              : user.customerName,
           },
           {
-            customer_mobile: user.customerMobile,
+            customer_mobile: user.guest_mobile
+              ? user.guest_mobile
+              : user.customerMobile,
           },
           {
             customer_otp: "9253",
@@ -184,7 +197,7 @@ const Bookings = () => {
             customer_dropoff: user.destination,
           },
           {
-            customer_pickupdatetime: "21/07/2024 08:45 PM",
+            customer_pickupdatetime: `${user.pickup_date}, ${user.pickup_time}`,
           },
         ],
         waId: driver?.mobile, //driver mobile no
