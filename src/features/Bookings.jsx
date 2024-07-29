@@ -135,13 +135,14 @@ const Bookings = () => {
     }
   }, [openAssignDriverModal]);
 
-  const sendEmail = async(email, name) => {
+  const sendEmail = async (email, name) => {
+    console.log(email,name);
     const url = "https://control.msg91.com/api/v5/email/send";
 
     const headers = {
       "Content-Type": "application/json",
       Accept: "application/json",
-      authkey: "{YOUR_MSG91_AUTHKEY}",
+      authkey: "321794AzjmHjH685e61f188P1",
     };
 
     const body = {
@@ -247,7 +248,7 @@ const Bookings = () => {
     );
     console.log("notifications response", res);
 
-    sendEmail(user?.customerEmail, user?.customerName);
+    sendEmail(user?.customerMail, user?.customerName);
   };
 
   const onSubmit = async (data) => {
