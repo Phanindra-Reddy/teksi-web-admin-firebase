@@ -135,6 +135,43 @@ const Bookings = () => {
     }
   }, [openAssignDriverModal]);
 
+  const sendEmail = async(email, name) => {
+    const url = "https://control.msg91.com/api/v5/email/send";
+
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      authkey: "{YOUR_MSG91_AUTHKEY}",
+    };
+
+    const body = {
+      recipients: [
+        {
+          to: [
+            {
+              email,
+              name,
+            },
+          ],
+        },
+      ],
+      from: {
+        email: "noreply@teksi.in",
+      },
+      domain: "teksi.in",
+      template_id: "teksi_trip_confirm_sample",
+    };
+
+    axios
+      .post(url, body, { headers })
+      .then((response) => {
+        console.log("email res", response);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
+
   const sendNotification = async (filteredDriver, selectedUser) => {
     const driver = filteredDriver?.[0];
     const user = selectedUser;
@@ -209,6 +246,8 @@ const Bookings = () => {
       data
     );
     console.log("notifications response", res);
+
+    sendEmail(user?.customerEmail, user?.customerName);
   };
 
   const onSubmit = async (data) => {
