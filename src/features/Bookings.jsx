@@ -40,7 +40,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import EmailIcon from "@mui/icons-material/Email";
-import { getDateTime } from "../utils/utils";
+import { getDateTime, timeFormat } from "../utils/utils";
 import axios from "axios";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -135,42 +135,26 @@ const Bookings = () => {
     }
   }, [openAssignDriverModal]);
 
-  const sendEmail = async (email, name) => {
-    console.log(email,name);
-    const url = "https://control.msg91.com/api/v5/email/send";
-
-    const headers = {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      authkey: "321794AzjmHjH685e61f188P1",
+  const sendEmail = async (user) => {
+    const booking_date_time = `${new Date(
+      user?.booking_date_time
+    ).toDateString()}, ${timeFormat(user?.booking_date_time)}`;
+   
+    const data = {
+      name: user?.customerName,
+      email: user?.customerMail,
+      booking_id: user?.trip_id,
+      booking_date:booking_date_time,
+      pickup_location: user?.origin,
+      dropoff_location: user?.destination,
+      pickup_time: user?.pickup_date + ", " + user?.pickup_time,
+      trip_amount: "₹ "+user?.total_trip_fare,
     };
-
-    const body = {
-      recipients: [
-        {
-          to: [
-            {
-              email,
-              name,
-            },
-          ],
-        },
-      ],
-      from: {
-        email: "noreply@teksi.in",
-      },
-      domain: "teksi.in",
-      template_id: "teksi_trip_confirm_sample",
-    };
-
-    axios
-      .post(url, body, { headers })
-      .then((response) => {
-        console.log("email res", response);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+    const res = axios.post(
+      "https://notifyinvoicecreation-e4k646dp4q-uc.a.run.app/",
+      data
+    );
+    console.log("notifications response", res);
   };
 
   const sendNotification = async (filteredDriver, selectedUser) => {
@@ -180,8 +164,8 @@ const Bookings = () => {
     console.log(driver, user);
     const whatsappNumber =
       user?.customerMobile && user.guest_mobile
-        ? [user.customerMobile, user.guest_mobile]
-        : [user.customerMobile];
+        ? ["91" + user.customerMobile, "91" + user.guest_mobile]
+        : ["91" + user.customerMobile];
     const data = {
       userBookingDetails: {
         template_name: "share_driverdetails_touser",
@@ -238,7 +222,7 @@ const Bookings = () => {
             customer_pickupdatetime: `${user.pickup_date}, ${user.pickup_time}`,
           },
         ],
-        waId: driver?.mobile, //driver mobile no
+        waId: "91" + driver?.mobile, //driver mobile no
       },
     };
 
@@ -248,7 +232,7 @@ const Bookings = () => {
     );
     console.log("notifications response", res);
 
-    sendEmail(user?.customerMail, user?.customerName);
+    sendEmail(user);
   };
 
   const onSubmit = async (data) => {
