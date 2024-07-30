@@ -141,14 +141,17 @@ const Bookings = () => {
     ).toDateString()}, ${timeFormat(user?.booking_date_time)}`;
    
     const data = {
+      template_id: "teksi_trip_confirm_sample",
       name: user?.customerName,
       email: user?.customerMail,
       booking_id: user?.trip_id,
-      booking_date:booking_date_time,
+      booking_date: booking_date_time,
       pickup_location: user?.origin,
       dropoff_location: user?.destination,
       pickup_time: user?.pickup_date + ", " + user?.pickup_time,
-      trip_amount: "₹ "+user?.total_trip_fare,
+      trip_amount: "₹ " + user?.total_trip_fare,
+      fileUrl:
+        "https://firebasestorage.googleapis.com/v0/b/teksi-cabs.appspot.com/o/wati_invoice_Azyrb0UGDHywdTK2.pdf?alt=media&token=c1d03103-bff9-42ff-9e6e-403814bd1a92",
     };
     const res = axios.post(
       "https://notifyinvoicecreation-e4k646dp4q-uc.a.run.app/",
