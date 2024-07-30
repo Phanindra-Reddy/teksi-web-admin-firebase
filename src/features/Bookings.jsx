@@ -141,7 +141,7 @@ const Bookings = () => {
     ).toDateString()}, ${timeFormat(user?.booking_date_time)}`;
    
     const data = {
-      template_id: "teksi_trip_confirm_sample",
+      template_id: "teksi_trip_confirm_sample_2",
       name: user?.customerName,
       email: user?.customerMail,
       booking_id: user?.trip_id,
