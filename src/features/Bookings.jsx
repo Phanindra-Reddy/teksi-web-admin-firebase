@@ -189,7 +189,7 @@ const Bookings = () => {
               {
                 vehicle_no: user?.assignedVehicleId
                   ? user?.assignedVehicleId
-                  : "",
+                  : "AP12GH1234",
               },
               {
                 ride_otp: "9988",
@@ -228,6 +228,8 @@ const Bookings = () => {
         waId: "91" + driver?.mobile, //driver mobile no
       },
     };
+
+    console.log("notification data",driver,user, data);
 
     const res = axios.post(
       "https://notifybookingdetails-e4k646dp4q-uc.a.run.app",

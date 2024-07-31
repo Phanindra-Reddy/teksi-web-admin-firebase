@@ -183,7 +183,7 @@ const Vehicles = () => {
                 <TableCell align="left">{vehicle.driverName}</TableCell>
                 <TableCell align="left">
                   <IconButton
-                    aria-label="delete"
+                    aria-label="edit"
                     onClick={() => {
                       fetchDrivers();
                       setOpenVehicleModal(true);
