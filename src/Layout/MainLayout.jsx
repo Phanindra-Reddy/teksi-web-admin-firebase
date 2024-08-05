@@ -91,7 +91,7 @@ const MainLayout = ({ Component }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const adminNotViwedTripsCount = useSelector(getAdminNotViwedTripsCount);
-  console.log(location);
+  //console.log(location);
 
   const [openSideNav, setOpenSideNav] = useState(true);
   const [anchorElNav, setAnchorElNav] = useState(null);

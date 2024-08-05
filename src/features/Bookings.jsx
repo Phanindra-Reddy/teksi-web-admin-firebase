@@ -15,7 +15,9 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   styled,
+  TextField,
   Typography,
 } from "@mui/material";
 import { firestoreDb, realDb } from "../../firebase";
@@ -38,10 +40,12 @@ import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import { notifyError, notifySuccess } from "../../toast";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import EmailIcon from "@mui/icons-material/Email";
-import { getDateTime, timeFormat } from "../utils/utils";
+import { timeFormat } from "../utils/utils";
 import axios from "axios";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -53,11 +57,24 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
-const day = String(new Date().getDate());
-const month = String(new Date().getMonth() + 1);
-const year = String(new Date().getFullYear());
+const formatDate = (date) => {
+  const day = String(date.getDate());
+  const month = String(date.getMonth() + 1);
+  const year = String(date.getFullYear());
+  return day + month + year;
+};
 
-const todayDate = day + month + year;
+const today = new Date();
+
+const tomorrow = new Date(today);
+tomorrow.setDate(today.getDate() + 1);
+
+const dayAfterTomorrow = new Date(today);
+dayAfterTomorrow.setDate(today.getDate() + 2);
+
+const todayDate = formatDate(today);
+const tomorrowDate = formatDate(tomorrow);
+const dayAfterTomorrowDate = formatDate(dayAfterTomorrow);
 
 const Bookings = () => {
   const {
@@ -75,35 +92,47 @@ const Bookings = () => {
   const dispatch = useDispatch();
   const descriptionElementRef = useRef(null);
 
-  const [trips, setTrips] = useState(null);
+  const [trips, setTrips] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [openAssignDriverModal, setOpenAssignDriverModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(todayDate);
+  const [customDate, setCustomDate] = useState(null);
 
   const [drivers, setDrivers] = useState(null);
   const [isDriverAssigning, setIsDriverAssigning] = useState(false);
 
   const [openTableColumn, setOpenTableColumn] = useState("");
 
-  const fetchTrips = async () => {
+  const fetchTrips = async (date) => {
     setIsLoading(true);
+    console.log("is loading is true");
 
     try {
-      const starCountRef = ref(realDb, `bookings/${todayDate}`);
+      const starCountRef = ref(realDb, `bookings/${date}`);
       onValue(starCountRef, (snapshot) => {
         const data = snapshot.val();
         console.log("bookings", data);
-        const notViewedCount = Object.values(data)?.filter(
-          (trip) => !trip.isAdminViewed
-        );
-        setTrips(Object.values(data));
-        dispatch(setAdminNotViwedTripsCount(notViewedCount?.length));
+        if (data !== null) {
+          const notViewedCount =
+            data !== null
+              ? Object?.values(data)?.filter((trip) => !trip.isAdminViewed)
+              : 0;
+          setTrips(Object?.values(data));
+          dispatch(setAdminNotViwedTripsCount(notViewedCount?.length));
+          setIsLoading(false);
+        } else {
+          dispatch(setAdminNotViwedTripsCount(0));
+          setTrips([]);
+          setIsLoading(false);
+        }
       });
     } catch (error) {
       console.log(error);
-    } finally {
       setIsLoading(false);
+    } finally {
+      //setIsLoading(false);
     }
   };
 
@@ -123,7 +152,7 @@ const Bookings = () => {
     }
   };
   useEffect(() => {
-    fetchTrips();
+    fetchTrips(selectedDate);
   }, []);
 
   useEffect(() => {
@@ -139,7 +168,7 @@ const Bookings = () => {
     const booking_date_time = `${new Date(
       user?.booking_date_time
     ).toDateString()}, ${timeFormat(user?.booking_date_time)}`;
-   
+
     const data = {
       template_id: "teksi_trip_confirm_sample_2",
       name: user?.customerName,
@@ -150,8 +179,7 @@ const Bookings = () => {
       dropoff_location: user?.destination,
       pickup_time: user?.pickup_date + ", " + user?.pickup_time,
       trip_amount: "₹ " + user?.total_trip_fare,
-      fileUrl:
-        "https://firebasestorage.googleapis.com/v0/b/teksi-cabs.appspot.com/o/wati_invoice_Azyrb0UGDHywdTK2.pdf?alt=media&token=c1d03103-bff9-42ff-9e6e-403814bd1a92",
+      fileUrl: user?.invoiceUrl,
     };
     const res = axios.post(
       "https://notifyinvoicecreation-e4k646dp4q-uc.a.run.app/",
@@ -229,7 +257,7 @@ const Bookings = () => {
       },
     };
 
-    console.log("notification data",driver,user, data);
+    console.log("notification data", driver, user, data);
 
     const res = axios.post(
       "https://notifybookingdetails-e4k646dp4q-uc.a.run.app",
@@ -244,7 +272,7 @@ const Bookings = () => {
     const filterDriver = drivers.filter(
       (driver) => driver.driverID === data.driver
     );
-    console.log(data, filterDriver, selectedUser);
+    // console.log(data, filterDriver, selectedUser);
     setIsDriverAssigning(true);
 
     try {
@@ -270,14 +298,14 @@ const Bookings = () => {
           assignedDriverName: `${filterDriver?.[0]?.firstName} ${filterDriver?.[0]?.lastName}`,
         }),
       ]).then(() => {
-        console.log("updated");
+        //console.log("updated");
         notifySuccess("Driver assigned successfully!");
         setOpenAssignDriverModal(false);
         setSelectedUser(null);
         sendNotification(filterDriver, selectedUser);
       });
 
-      console.log("Driver assigned successfully!");
+      //console.log("Driver assigned successfully!");
     } catch (error) {
       console.log(error);
       notifyError("Error updating driver", error);
@@ -286,91 +314,148 @@ const Bookings = () => {
     }
   };
 
-  console.log(trips);
+  console.log(isLoading, customDate.$d);
 
   if (isLoading) {
-    return <Typography variant="h2">Loading trips...</Typography>;
+    return <Typography variant="h5">Loading trips...</Typography>;
   }
 
   return (
     <div>
-      <TableContainer component={Paper} sx={{ maxHeight: 640 }}>
-        <Table
-          stickyHeader
-          sx={{ minWidth: 650 }}
-          aria-label="sticky header table"
-        >
-          <TableHead>
-            <TableRow>
-              <StyledTableCell>button</StyledTableCell>
-              <StyledTableCell>S.No</StyledTableCell>
-              <StyledTableCell align="left">Name</StyledTableCell>
-              <StyledTableCell align="left">Mobile</StyledTableCell>
-              <StyledTableCell align="left">Origin</StyledTableCell>
-              <StyledTableCell align="left">Destination</StyledTableCell>
-              <StyledTableCell align="left">Pickup Date & Time</StyledTableCell>
-              <StyledTableCell align="left">Trip Fare</StyledTableCell>
-              <StyledTableCell align="left">Assigned Driver</StyledTableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <>
-              {trips?.map((trip, index) => (
-                <Fragment key={trip?.trip_id}>
-                  <TableRow
-                    key={trip.trip_id}
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell>
-                      <IconButton
-                        aria-label="expand row"
-                        size="small"
-                        onClick={() => setOpenTableColumn(trip.trip_id)}
-                      >
-                        {openTableColumn === trip.trip_id ? (
-                          <KeyboardArrowUpIcon />
-                        ) : (
-                          <KeyboardArrowDownIcon />
-                        )}
-                      </IconButton>
-                    </TableCell>
-                    <TableCell align="left">
-                      <div
-                        style={{
-                          height: "24px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "5px",
-                        }}
-                      >
-                        {index + 1}
-                        <p
+      <Stack
+        spacing={2}
+        direction="row"
+        sx={{ mb: 2, borderBottom: 1, borderColor: "gray" }}
+      >
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant={selectedDate === todayDate ? "contained" : "text"}
+            onClick={() => {
+              fetchTrips(todayDate);
+              setSelectedDate(todayDate);
+            }}
+          >
+            Today
+          </Button>
+          <Button
+            variant={selectedDate === tomorrowDate ? "contained" : "text"}
+            onClick={() => {
+              fetchTrips(tomorrowDate);
+              setSelectedDate(tomorrowDate);
+            }}
+          >
+            Tomorrow
+          </Button>
+          <Button
+            variant={
+              selectedDate === dayAfterTomorrowDate ? "contained" : "text"
+            }
+            onClick={() => {
+              fetchTrips(dayAfterTomorrowDate);
+              setSelectedDate(dayAfterTomorrowDate);
+            }}
+          >
+            Day after Tomorrow
+          </Button>
+        </Stack>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DemoContainer components={["DatePicker"]}>
+            <DatePicker
+              label="Basic date picker"
+              value={customDate}
+              onChange={(newValue) => {
+                setCustomDate(newValue.$d);
+                console.log(newValue);
+              }}
+              slotProps={{ textField: { size: "small" } }}
+            />
+          </DemoContainer>
+        </LocalizationProvider>
+      </Stack>
+      {trips?.length > 0 ? (
+        <TableContainer component={Paper} sx={{ maxHeight: 640 }}>
+          <Table
+            stickyHeader
+            sx={{ minWidth: 650 }}
+            aria-label="sticky header table"
+          >
+            <TableHead>
+              <TableRow>
+                <StyledTableCell>button</StyledTableCell>
+                <StyledTableCell>S.No</StyledTableCell>
+                <StyledTableCell align="left">Name</StyledTableCell>
+                <StyledTableCell align="left">Mobile</StyledTableCell>
+                <StyledTableCell align="left">Origin</StyledTableCell>
+                <StyledTableCell align="left">Destination</StyledTableCell>
+                <StyledTableCell align="left">
+                  Pickup Date & Time
+                </StyledTableCell>
+                <StyledTableCell align="left">Trip Fare</StyledTableCell>
+                <StyledTableCell align="left">Assigned Driver</StyledTableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <>
+                {trips?.map((trip, index) => (
+                  <Fragment key={trip?.trip_id}>
+                    <TableRow
+                      key={trip.trip_id}
+                      sx={{
+                        "&:last-child td, &:last-child th": { border: 0 },
+                      }}
+                    >
+                      <TableCell>
+                        <IconButton
+                          aria-label="expand row"
+                          size="small"
+                          onClick={() => setOpenTableColumn(trip.trip_id)}
+                        >
+                          {openTableColumn === trip.trip_id ? (
+                            <KeyboardArrowUpIcon />
+                          ) : (
+                            <KeyboardArrowDownIcon />
+                          )}
+                        </IconButton>
+                      </TableCell>
+                      <TableCell align="left">
+                        <div
                           style={{
-                            minWidth: "90px",
-                            color: "white",
-                            background: `${trip?.toAirport ? "red" : "green"}`,
-                            borderRadius: "20px",
-                            textAlign: "center",
+                            height: "24px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
                           }}
                         >
-                          {trip?.toAirport ? "To Airport" : "From Airport"}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell component="th" scope="row">
-                      {trip?.customerName}
-                    </TableCell>
-                    <TableCell align="left">{trip.customerMobile}</TableCell>
-                    <TableCell align="left">{trip.origin}</TableCell>
-                    <TableCell align="left">{trip.destination}</TableCell>
-                    <TableCell align="left">
-                      {trip.pickup_date}
-                      {"  "}
-                      {trip.pickup_time}
-                    </TableCell>
-                    <TableCell align="left">{trip.total_trip_fare}</TableCell>
-                    <TableCell align="left">
-                      {/* {trip.assignedDriverId ? (
+                          {index + 1}
+                          <p
+                            style={{
+                              minWidth: "90px",
+                              color: "white",
+                              background: `${
+                                trip?.toAirport ? "red" : "green"
+                              }`,
+                              borderRadius: "20px",
+                              textAlign: "center",
+                            }}
+                          >
+                            {trip?.toAirport ? "To Airport" : "From Airport"}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell component="th" scope="row">
+                        {trip?.customerName}
+                      </TableCell>
+                      <TableCell align="left">{trip.customerMobile}</TableCell>
+                      <TableCell align="left">{trip.origin}</TableCell>
+                      <TableCell align="left">{trip.destination}</TableCell>
+                      <TableCell align="left">
+                        {trip.pickup_date}
+                        {"  "}
+                        {trip.pickup_time}
+                      </TableCell>
+                      <TableCell align="left">{trip.total_trip_fare}</TableCell>
+                      <TableCell align="left">
+                        {/* {trip.assignedDriverId ? (
                         trip.assignedDriverName
                       ) : (
                         <Button
@@ -384,81 +469,90 @@ const Bookings = () => {
                           Assign
                         </Button>
                       )} */}
-                      {trip.assignedDriverName}
-                      <Button
-                        variant="contained"
-                        onClick={() => {
-                          fetchDrivers();
-                          setSelectedUser(trip);
-                          setOpenAssignDriverModal(true);
-                        }}
-                      >
-                        Assign
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell
-                      style={{ paddingBottom: 0, paddingTop: 0 }}
-                      colSpan={10}
-                    >
-                      <Collapse
-                        in={openTableColumn === trip.trip_id}
-                        timeout="auto"
-                        unmountOnExit
-                      >
-                        <Box
-                          sx={{
-                            p: 4,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
+                        {trip.assignedDriverName}
+                        <Button
+                          variant="contained"
+                          onClick={() => {
+                            fetchDrivers();
+                            setSelectedUser(trip);
+                            setOpenAssignDriverModal(true);
                           }}
                         >
-                          <Button variant="outlined" color="error">
-                            Cancel Trip
-                          </Button>
-                          <form
-                            style={{
+                          Assign
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell
+                        style={{ paddingBottom: 0, paddingTop: 0 }}
+                        colSpan={10}
+                      >
+                        <Collapse
+                          in={openTableColumn === trip.trip_id}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                          <Box
+                            sx={{
+                              p: 4,
                               display: "flex",
                               alignItems: "center",
-                              gap: 2,
+                              justifyContent: "space-between",
                             }}
                           >
-                            <FormControl
-                              sx={{ m: 1, minWidth: 180 }}
-                              size="small"
-                            >
-                              <InputLabel id="demo-simple-select-label">
-                                Update Trip Status
-                              </InputLabel>
-                              <Select
-                                labelId="demo-simple-select-label"
-                                id="demo-simple-select"
-                                value=""
-                                label="Update Trip Status"
-                                onChange={() => {}}
-                              >
-                                <MenuItem value="Completed">Completed</MenuItem>
-                                <MenuItem value="Ongoing">Ongoing</MenuItem>
-                                <MenuItem value="Completed">Completed</MenuItem>
-                                <MenuItem value="Cancelled">Cancelled</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <Button type="submit" variant="contained">
-                              Save Status
+                            <Button variant="outlined" color="error">
+                              Cancel Trip
                             </Button>
-                          </form>
-                        </Box>
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
-                </Fragment>
-              ))}
-            </>
-          </TableBody>
-        </Table>
-      </TableContainer>
+                            <form
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                              }}
+                            >
+                              <FormControl
+                                sx={{ m: 1, minWidth: 180 }}
+                                size="small"
+                              >
+                                <InputLabel id="demo-simple-select-label">
+                                  Update Trip Status
+                                </InputLabel>
+                                <Select
+                                  labelId="demo-simple-select-label"
+                                  id="demo-simple-select"
+                                  value=""
+                                  label="Update Trip Status"
+                                  onChange={() => {}}
+                                >
+                                  <MenuItem value="Completed">
+                                    Completed
+                                  </MenuItem>
+                                  <MenuItem value="Ongoing">Ongoing</MenuItem>
+                                  <MenuItem value="Completed">
+                                    Completed
+                                  </MenuItem>
+                                  <MenuItem value="Cancelled">
+                                    Cancelled
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+                              <Button type="submit" variant="contained">
+                                Save Status
+                              </Button>
+                            </form>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
+                ))}
+              </>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <Typography variant="h4">No Trips Found</Typography>
+      )}
 
       {/* Assign Driver Modal */}
       <Dialog
