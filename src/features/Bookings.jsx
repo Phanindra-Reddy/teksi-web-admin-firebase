@@ -364,7 +364,7 @@ const Bookings = () => {
               label="Basic date picker"
               value={customDate}
               onChange={(newValue) => {
-                setCustomDate(newValue.$d);
+                setCustomDate(newValue);
                 console.log(newValue);
               }}
               slotProps={{ textField: { size: "small" } }}
