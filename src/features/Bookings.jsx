@@ -314,7 +314,7 @@ const Bookings = () => {
     }
   };
 
-  console.log(isLoading, customDate.$d);
+  console.log(isLoading, customDate);
 
   if (isLoading) {
     return <Typography variant="h5">Loading trips...</Typography>;
