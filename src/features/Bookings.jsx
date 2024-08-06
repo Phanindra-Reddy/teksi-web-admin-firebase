@@ -269,6 +269,8 @@ const Bookings = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log("SelectedUser", selectedUser);
+
     const filterDriver = drivers.filter(
       (driver) => driver.driverID === data.driver
     );
@@ -281,9 +283,13 @@ const Bookings = () => {
         `users/${selectedUser?.customerUid}/trips/${selectedUser?.trip_id}`
       );
 
+      const pickUpDateAndTime = formatDate(new Date(selectedUser?.pickup_date));
+
+      console.log("pickUpDateAndTime", pickUpDateAndTime);
+
       const realDbRef = ref(
         realDb,
-        `bookings/${todayDate}/${selectedUser?.trip_id}`
+        `bookings/${pickUpDateAndTime}/${selectedUser?.trip_id}`
       );
 
       await Promise.all([
@@ -474,6 +480,7 @@ const Bookings = () => {
                           variant="contained"
                           onClick={() => {
                             fetchDrivers();
+                            console.log(trip);
                             setSelectedUser(trip);
                             setOpenAssignDriverModal(true);
                           }}
