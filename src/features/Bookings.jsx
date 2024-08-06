@@ -227,8 +227,8 @@ const Bookings = () => {
         ],
       },
       driverBookingDetails: {
-        template_name: "share_bookingdetails_to_driver",
-        broadcast_name: "share_bookingdetails_to_driver",
+        template_name: "share_booking_details_to_driver",
+        broadcast_name: "share_booking_details_to_driver",
         parameters: [
           {
             customer_name: user.guest_mobile
