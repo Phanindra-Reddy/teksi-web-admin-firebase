@@ -278,7 +278,7 @@ const Bookings = () => {
     try {
       const docRef = doc(
         firestoreDb,
-        `users/${selectedUser?.customerMobile}/trips/${selectedUser?.trip_id}`
+        `users/${selectedUser?.customerUid}/trips/${selectedUser?.trip_id}`
       );
 
       const realDbRef = ref(
