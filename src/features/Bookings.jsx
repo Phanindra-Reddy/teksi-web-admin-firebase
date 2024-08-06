@@ -199,8 +199,8 @@ const Bookings = () => {
         : ["91" + user.customerMobile];
     const data = {
       userBookingDetails: {
-        template_name: "share_driverdetails_touser",
-        broadcast_name: "share_driverdetails_touser",
+        template_name: "share_driver_details_to_user",
+        broadcast_name: "share_driver_details_to_user",
         receivers: [
           {
             whatsappNumber,
