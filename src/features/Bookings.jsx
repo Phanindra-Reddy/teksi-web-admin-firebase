@@ -182,7 +182,7 @@ const Bookings = () => {
       fileUrl: user?.invoiceUrl,
     };
     const res = axios.post(
-      "https://notifyinvoicecreation-e4k646dp4q-uc.a.run.app/",
+      "https://notifyinvoicecreation-4yoiponkrq-uc.a.run.app",
       data
     );
     console.log("notifications response", res);
@@ -260,7 +260,7 @@ const Bookings = () => {
     console.log("notification data", driver, user, data);
 
     const res = axios.post(
-      "https://notifybookingdetails-e4k646dp4q-uc.a.run.app",
+      "https://notifybookingdetails-4yoiponkrq-uc.a.run.app",
       data
     );
     console.log("notifications response", res);
